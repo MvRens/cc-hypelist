@@ -1,10 +1,28 @@
 os.loadAPI("api/x2monitor")
 local listYStart = 3
 
+print("Attempting to find monitor")
+local peripheralList = peripheral.getNames()
+local monitorName = ""
+
+for index = 1, #peripheralList do
+  if peripheral.getType(peripheralList[index]) == "monitor" then
+    monitorName = peripheralList[index]
+    break
+  end
+end
+
+if monitorName == "" then
+  print("No monitor found, aborting!")
+  do return end
+end
+
+print("Found monitor: " .. monitorName)
+
 print("Hypelist Monitor running")
 print(": "..tostring(hypelist.getCount()).." entries loaded")
 
-local monitor = x2monitor.wrap("monitor_1")
+local monitor = x2monitor.wrap(monitorName)
 monitor.clear()
 monitor.pushColorState()
   -- Rainbow!

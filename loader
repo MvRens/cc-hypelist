@@ -1,0 +1,29 @@
+local githubBase = "https://raw.githubusercontent.com/PsychoMark/cc-hypelist/master/"
+
+
+function get(filename)
+  print("Downloading " .. filename .. "...")
+
+  local input = http.get(githubBase .. filename)
+  if (input == nil) then
+    print("Could not download " .. filename)
+    do return end
+  end
+
+  
+  local output = fs.open(filename, "w")
+  output.write(input.readAll())
+  output.close()
+  input.close()
+end
+
+
+fs.makeDir("api")
+get("api/hypelist")
+get("api/x2monitor")
+get("display")
+get("input")
+get("startup")
+
+print("Done! Rebooting...")
+os.reboot()
