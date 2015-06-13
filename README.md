@@ -1,7 +1,11 @@
 # ComputerCraft Technicolor Hypelist
 
+![Screenshot of the monitors](https://raw.githubusercontent.com/PsychoMark/cc-hypelist/master/screenshots/Hypelist.png)
+
+![Screenshot of the input program](https://raw.githubusercontent.com/PsychoMark/cc-hypelist/master/screenshots/HypelistInput.png)
+
 #### Requirements
-- ComputerCraft (duh)
+- ComputerCraft 1.6+
 - http_enable=true in the ComputerCraft config
  - Required for easy installation, alternatively transfer all the files manually
 - Advanced Computer
