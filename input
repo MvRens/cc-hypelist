@@ -1,0 +1,25 @@
+function trim(s)
+  return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
+while true do
+  term.clear()
+  term.setCursorPos(1, 1)
+  print("HypeList Shell")
+  print("")
+  print("What do you want to add to the hype list?")
+  term.write("> ")
+  
+  local text = trim(read())
+  if (string.len(text) > 0) then
+    hypelist.add(text)
+
+    print("")  
+    print("It is done.")
+  else
+    print("")
+    print("Aww hell no.")
+  end
+  
+  sleep(2)
+end

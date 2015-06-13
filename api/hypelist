@@ -1,0 +1,67 @@
+local list = {}
+
+
+function getList()
+  return list
+end
+
+
+function getCount()
+  return #list
+end
+
+
+local function load()
+  local listFile = fs.open("hype.list", "r")
+  
+  if (listFile ~= nil) then
+    list = textutils.unserialize(listFile.readAll())
+    listFile.close()
+  end
+end
+
+
+local function save()
+  local listFile = fs.open("hype.list", "w")
+  
+  listFile.write(textutils.serialize(list))
+  listFile.close()
+  
+  os.queueEvent("hypelist")
+end
+
+
+function add(text)
+  local entry = {}
+  entry.text = text
+  entry.done = false
+  
+  table.insert(list, entry)
+  save()
+end
+
+
+function delete(index)
+  table.remove(list, index)
+  save()
+end
+
+
+function isDone(index)
+  if (index > 0 and index <= #list) then
+    return list[index].done
+  else
+    return false
+  end
+end
+
+
+function toggleDone(index)
+  if (index > 0 and index <= #list) then
+    list[index].done = not list[index].done
+    save()
+  end
+end
+
+
+load()

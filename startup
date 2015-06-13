@@ -1,0 +1,3 @@
+os.loadAPI("api/hypelist")
+shell.openTab("display")
+shell.run("input")

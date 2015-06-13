@@ -1,0 +1,191 @@
+--- Initializes an X2Monitor object.
+-- @param monitor Either a string which is passed to peripheral.wrap
+--                or an already wrapped monitor. If omitted, term will
+--                be used as a default.
+-- @return An X2Monitor object.
+function wrap(monitor)
+  local self = 
+  {
+    handle = nil,
+    width = nil,
+    height = nil
+  }
+
+
+  -- Constructor
+  if monitor == nil then
+    self.handle = term
+  elseif type(monitor) == "string" then
+    self.handle = peripheral.wrap(monitor)
+  else
+    self.handle = monitor
+  end
+
+  self.width, self.height = self.handle.getSize()
+
+  local colorStack = {{fg = colors.white, bg = colors.black}}
+  self.handle.setBackgroundColor(colors.black)
+  self.handle.setTextColor(colors.white)
+
+
+  --- Start a new color state.
+  function self.pushColorState()
+    local lastState = colorStack[#colorStack]
+
+    table.insert(colorStack, {fg = lastState.fg, bg = lastState.bg})
+  end
+
+
+  --- Returns to the previous color state.
+  function self.popColorState()
+    if #colorStack == 1 then
+      error("popColorState not matched by pushColorState")
+    end
+
+    table.remove(colorStack)
+
+    local lastState = colorStack[#colorStack]
+    self.handle.setTextColor(lastState.fg)
+    self.handle.setBackgroundColor(lastState.bg)
+  end
+
+
+  -- Overrides to support color state
+  function self.setTextColor(color)
+    colorStack[#colorStack].fg = color
+    self.handle.setTextColor(color)
+  end
+
+
+  function self.setBackgroundColor(color)
+    colorStack[#colorStack].bg = color
+    self.handle.setBackgroundColor(color)
+  end
+
+
+  --- Draws text centered on the monitor.
+  -- @param text            The text to draw.
+  -- @param y               Optional. The Y position of the text.
+  -- @param clearBackground Optional. If True, fills the surrounding
+  --                        of the text with spaces.
+  function self.textCentered(text, y, clearBackground)
+    local before = math.floor((self.width - string.len(text)) / 2)
+    local after = self.width - string.len(text) - before
+
+    local currentX, currentY = self.handle.getCursorPos()
+    if y ~= nil then
+      currentY = y;
+    end
+
+    if clearBackground then
+      self.handle.setCursorPos(1, currentY)
+      self.handle.write(string.rep(" ", before)..text..string.rep(" ", after))
+    else
+      self.handle.setCursorPos(before + 1, currentY)
+      self.handle.write(text)
+    end
+  end
+
+
+  --- Draws text in a box, padded with spaces.
+  -- @param text            The text to draw.
+  -- @param options   A table describing how the progress bar should be drawn.
+  --    Supported keys:
+  --      y           The Y position to draw the text at.
+  --                  Defaults to the current cursor position.
+  --      x           The X position to draw the text at.
+  --                  Defaults to the current cursor position.
+  --      width       The width of the text box.
+  --                  Defaults to monitor width - x.
+  function self.textBox(text, options)
+    if (options == nil) then
+      options = {}
+    end
+
+    local currentX, currentY = self.handle.getCursorPos()
+
+    local x = options.x or currentX
+    local y = options.y or currentY
+    local width = options.width or (self.width - (x - 1))
+
+    local boxedText = nil
+    if (string.len(text) > width) then
+      boxedText = string.sub(text, 1, width)
+    else
+      boxedText = text .. string.rep(" ", width - string.len(text))
+    end
+
+		self.handle.setCursorPos(x, y)
+    self.handle.write(boxedText)
+  end
+
+
+  --- Draws a progress bar.
+  -- @param position  The current position.
+  -- @param max       The maximum value.
+  -- @param options   A table describing how the progress bar should be drawn.
+  --    Supported keys:
+  --      y           The Y position to draw the progress bar at.
+  --                  Defaults to the current cursor position.
+  --      x           The X position to draw the progress bar at.
+  --                  Defaults to 1.
+  --      width       The width of the progress bar.
+  --                  Defaults to monitor width - x.
+  --      height      The height of the progress bar.
+  --                  Defaults to 1.
+  --      background  The background color. Defaults to black.
+  --      foreground  The foreground color. Defaults to gray.
+  function self.progressBar(position, max, options)
+    if (options == nil) then
+      options = {}
+    end
+
+    local currentX, currentY = self.handle.getCursorPos()
+
+    local x = options.x or 1
+    local y = options.y or currentY
+    local width = options.width or (self.width - (x - 1))
+    local height = options.height or 1
+    local barWidth = 0;
+    
+    if max > 0 then
+      barWidth = (position / max) * width
+    end
+
+    self.pushColorState()
+    for y = y, y + (height - 1) do
+      self.handle.setCursorPos(x, y)
+      if barWidth > 0 then
+        if options.foreground ~= nil then
+          self.handle.setBackgroundColor(options.foreground)
+        else
+          self.handle.setBackgroundColor(colors.lightGray)
+        end
+
+        self.handle.write(string.rep(" ", barWidth))
+      end
+
+      if options.background ~= nil then
+        self.handle.setBackgroundColor(options.background)
+      else
+        self.handle.setBackgroundColor(colors.black)
+      end
+
+      self.handle.write(string.rep(" ", width - barWidth))
+    end
+    self.popColorState()
+  end
+
+
+  -- Override setTextScale to update the size
+  function self.setTextScale(scale)
+    self.handle.setTextScale(scale)
+    self.width, self.height = self.handle.getSize()
+  end
+
+  -- Forward unknown methods to the monitor, so methods like
+  -- clear() also work on this wrapper.
+  setmetatable(self, {__index = self.handle})
+
+  return self
+end

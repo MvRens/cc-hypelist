@@ -1,0 +1,108 @@
+os.loadAPI("api/x2monitor")
+local listYStart = 3
+
+print("Hypelist Monitor running")
+print(": "..tostring(hypelist.getCount()).." entries loaded")
+
+local monitor = x2monitor.wrap("monitor_1")
+monitor.clear()
+monitor.pushColorState()
+  -- Rainbow!
+  monitor.setBackgroundColor(colors.red)
+  monitor.setCursorPos(1, 1)
+  monitor.textBox("")
+  
+  monitor.setBackgroundColor(colors.orange)
+  monitor.textBox("", { x = 2, width = monitor.width - 2 })
+  
+  monitor.setBackgroundColor(colors.yellow)
+  monitor.textBox("", { x = 3, width = monitor.width -  4 })
+  
+  monitor.setBackgroundColor(colors.green)
+  monitor.textBox("", { x = 4, width = monitor.width -  6 })
+  
+  monitor.setBackgroundColor(colors.blue)
+  monitor.textBox("", { x = 5, width = monitor.width - 8 })
+  
+  monitor.setBackgroundColor(colors.purple)
+  monitor.textBox("", { x = 6, width = monitor.width - 10 })
+  
+  monitor.setBackgroundColor(colors.magenta)
+  monitor.textBox("", { x = 7, width = monitor.width - 12 })
+  
+  monitor.setTextColor(colors.black)
+  monitor.textCentered("TECHNICOLOR HYPE LIST", 1, false)
+monitor.popColorState()
+
+function updateList()
+  local currentY = listYStart
+
+  for key, value in pairs(hypelist.getList()) do
+    monitor.setCursorPos(1, currentY)
+  
+    -- Checkbox
+    monitor.write("[")
+    monitor.pushColorState()
+      monitor.setTextColor(colors.green)
+      
+      if (value.done) then
+        monitor.write("V")
+      else
+        monitor.write(" ")
+      end
+    monitor.popColorState()
+    monitor.write("] ")
+
+    -- Text    
+    monitor.textBox(value.text, { width = monitor.width - 6 })
+
+    if (value.done) then    
+      monitor.pushColorState()
+        monitor.setTextColor(colors.red)
+        monitor.write(" X")
+      monitor.popColorState()
+    else
+      monitor.write("  ")
+    end
+  
+    currentY = currentY + 1
+  end
+  
+  -- Clear remaining lines  
+  for remainingY = currentY, monitor.height, 1 do
+    monitor.setCursorPos(1, remainingY)
+    monitor.clearLine()
+  end
+end
+
+
+function touch(x, y)
+  local index = (y - listYStart) + 1
+  print(": Touched "..tostring(x)..","..tostring(y).." - list index "..tostring(index))
+
+  if (index > 0 and index <= hypelist.getCount()) then    
+    if (x >= monitor.width - 1 and hypelist.isDone(index)) then
+      print(": Index valid, deleting")
+      hypelist.delete(index)
+    else
+      print(": Index valid, toggling")
+      hypelist.toggleDone(index)
+    end
+  else
+    print(": Index invalid (count: "..tostring(hypelist.getCount())..")")
+  end
+end
+
+
+updateList()
+
+while true do
+  local event, param1, param2, param3 = os.pullEvent()
+  
+  if (event == "hypelist") then
+    print(": Hypelist updated, refreshing")
+    updateList()
+  elseif (event == "monitor_touch") then
+    touch(param2, param3)    
+  end
+end
