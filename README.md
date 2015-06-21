@@ -19,7 +19,7 @@ If you haven't done so already, you might want to label the computer first. This
 label set Hypelist
 ```
 
-To install the Hypelist, right-click on the computer and type in the following command, followed by Enter:
+To install or update the Hypelist, right-click on the computer and type in the following command, followed by Enter:
 ```
 pastebin get pwTujieA startup
 ```

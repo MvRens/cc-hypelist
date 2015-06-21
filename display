@@ -1,5 +1,4 @@
 os.loadAPI("api/x2monitor")
-local listYStart = 3
 
 print("Attempting to find monitor")
 local peripheralList = peripheral.getNames()
@@ -52,67 +51,175 @@ monitor.pushColorState()
   monitor.textCentered("TECHNICOLOR HYPE LIST", 1, false)
 monitor.popColorState()
 
-function updateList()
+
+local listYStart = 3
+local itemsSinglePage = monitor.height - (listYStart - 1)
+local itemsPerPage = itemsSinglePage - 2
+local currentPage = 0
+local pageCount = 0
+
+local startPos = 0
+local endPos = 0
+local isMultiPage = false
+
+function recalculate(items)
+  endPos = #items
+  pageCount = 1
+
+  if (endPos > itemsSinglePage) then
+    -- Apply pagination
+    startPos = currentPage * itemsPerPage
+    while (startPos > 0 and startPos >= #items) do
+      startPos = startPos - itemsPerPage
+    end
+
+    endPos = startPos + itemsPerPage
+    if (endPos >= #items) then
+      endPos = #items
+    end
+
+    pageCount = math.ceil(#items / itemsPerPage)
+  end
+
+  isMultiPage = (pageCount > 1)
+end
+
+
+function outputList(items)
+  local currentPos = 0
   local currentY = listYStart
 
   for key, value in pairs(hypelist.getList()) do
-    monitor.setCursorPos(1, currentY)
-  
-    -- Checkbox
-    monitor.write("[")
-    monitor.pushColorState()
-      monitor.setTextColor(colors.green)
-      
-      if (value.done) then
-        monitor.write("V")
-      else
-        monitor.write(" ")
-      end
-    monitor.popColorState()
-    monitor.write("] ")
-
-    -- Text    
-    monitor.textBox(value.text, { width = monitor.width - 6 })
-
-    if (value.done) then    
+    if (currentPos >= startPos and currentPos < endPos) then
+      monitor.setCursorPos(1, currentY)
+    
+      -- Checkbox
+      monitor.write("[")
       monitor.pushColorState()
-        monitor.setTextColor(colors.red)
-        monitor.write(" X")
+        monitor.setTextColor(colors.green)
+        
+        if (value.done) then
+          monitor.write("V")
+        else
+          monitor.write(" ")
+        end
       monitor.popColorState()
-    else
-      monitor.write("  ")
+      monitor.write("] ")
+
+      -- Text    
+      monitor.textBox(value.text, { width = monitor.width - 6 })
+
+      if (value.done) then    
+        monitor.pushColorState()
+          monitor.setTextColor(colors.red)
+          monitor.write(" X")
+        monitor.popColorState()
+      else
+        monitor.write("  ")
+      end
+
+      currentY = currentY + 1
     end
   
-    currentY = currentY + 1
+    currentPos = currentPos + 1
   end
   
+  local clearTo = monitor.height
+  if (isMultiPage) then
+    clearTo = clearTo - 1
+  end
+
   -- Clear remaining lines  
-  for remainingY = currentY, monitor.height, 1 do
+  for remainingY = currentY, clearTo, 1 do
     monitor.setCursorPos(1, remainingY)
     monitor.clearLine()
   end
 end
 
 
-function touch(x, y)
-  local index = (y - listYStart) + 1
-  print(": Touched "..tostring(x)..","..tostring(y).." - list index "..tostring(index))
+function outputPageButtons(items)
+  monitor.pushColorState()
+    monitor.setTextColor(colors.lightGray)
+    monitor.textCentered("Page "..tostring(currentPage + 1).." of "..tostring(pageCount), monitor.height, true)
+  monitor.popColorState()
 
-  if (index > 0 and index <= hypelist.getCount()) then    
-    if (x >= monitor.width - 1 and hypelist.isDone(index)) then
-      print(": Index valid, deleting")
-      hypelist.delete(index)
-    else
-      print(": Index valid, toggling")
-      hypelist.toggleDone(index)
+  if (currentPage > 0) then
+    monitor.setCursorPos(1, monitor.height)
+    monitor.write("[")
+    monitor.pushColorState()
+      monitor.setTextColor(colors.lightGray)
+      monitor.write("<")
+    monitor.popColorState()
+    monitor.write("]")
+  end
+
+  if (currentPage < pageCount - 1) then
+    monitor.setCursorPos(monitor.width - 3, monitor.height)
+    monitor.write("[")
+    monitor.pushColorState()
+      monitor.setTextColor(colors.lightGray)
+      monitor.write(">")
+    monitor.popColorState()
+    monitor.write("]")
+  end
+end
+
+
+function updateList()
+  local items = hypelist.getList()
+
+  recalculate(items)
+  outputList(items)
+
+  if (isMultiPage) then
+    outputPageButtons(items)
+  end
+end
+
+
+function touch(x, y)
+  if (isMultiPage and y == monitor.height) then
+    if (x <= 5) then
+      if (currentPage > 0) then
+        print(": Touched previous page button")
+        currentPage = currentPage - 1
+        updateList()
+      end
+    elseif (x >= monitor.width - 5) then
+      if (currentPage < pageCount - 1) then
+        print(": Touched next page button")
+        currentPage = currentPage + 1
+        updateList()
+      end
     end
   else
-    print(": Index invalid (count: "..tostring(hypelist.getCount())..")")
+    local index = (y - listYStart) + 1
+    print(": Touched "..tostring(x)..","..tostring(y).." - list index "..tostring(index + startPos))
+
+    local itemsShowing = itemsSinglePage
+    if (isMultiPage) then
+      itemsShowing = itemsPerPage
+    end
+
+    if (index > 0 and index <= itemsShowing) then
+      index = index + startPos
+
+      if (x >= monitor.width - 1 and hypelist.isDone(index)) then
+        print(": Index valid, deleting")
+        hypelist.delete(index)
+      else
+        print(": Index valid, toggling")
+        hypelist.toggleDone(index)
+      end
+    else
+      print(": Index invalid")
+    end
   end
 end
 
 
 updateList()
+
 
 while true do
   local event, param1, param2, param3 = os.pullEvent()
