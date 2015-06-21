@@ -19,11 +19,22 @@ If you haven't done so already, you might want to label the computer first. This
 label set Hypelist
 ```
 
-To install or update the Hypelist, right-click on the computer and type in the following command, followed by Enter:
+To install the Hypelist, right-click on the computer and type in the following command, followed by Enter:
+
+(tip: pasting the text into the computer using Ctrl-V also works)
 ```
 pastebin get pwTujieA startup
 ```
+
 Then hold Ctrl-R to restart the computer.
+
+
+#### Updating
+If you want to update an existing Hypelist installation, right-click on the computer and hold Ctrl-T to terminate the Hypelist Shell. Then type in the following command, followed by Enter:
+
+```
+update
+```
 
 
 #### Usage

@@ -24,6 +24,7 @@ get("api/x2monitor")
 get("display")
 get("input")
 get("startup")
+get("update")
 
 print("Done! Rebooting...")
 os.reboot()
