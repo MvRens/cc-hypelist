@@ -2,24 +2,177 @@ function trim(s)
   return (s:gsub("^%s*(.-)%s*$", "%1"))
 end
 
+
+-- Modified from an old version of Computercraft's bios.lua:
+-- https://github.com/alekso56/ComputercraftLua/blob/master/bios.lua
+function read(history)
+    term.setCursorBlink(true)
+
+    local line = ""
+    local historyPos
+    local pos = 0
+    local terminalWidth = term.getSize()
+    local cursorPos = term.getCursorPos()
+
+    local function redraw(replaceChar)
+        local promptWidth = 11
+        local scroll = 0
+        if cursorPos + pos + promptWidth >= terminalWidth then
+            scroll = (cursorPos + pos + promptWidth) - terminalWidth
+        end
+
+        local cursorX, cursorY = term.getCursorPos()
+        term.setCursorPos(cursorPos, cursorY)
+
+        if replaceChar then
+            term.write(string.rep(replaceChar, string.len(line) + promptWidth - scroll))
+        else
+          if historyPos then
+            term.write("Edit #" .. (historyPos) .. string.rep(" ", 3 - string.len(tostring(historyPos))) .. "> ")
+          else
+            term.write("Add entry> ")
+          end
+
+          term.write(string.sub(line, scroll + 1))
+        end
+
+        term.setCursorPos(cursorPos + pos + promptWidth - scroll, cursorY)
+    end
+
+    redraw()
+    while true do
+        local event, param = os.pullEvent()
+        if event == "char" then
+            -- Typed key
+            line = string.sub(line, 1, pos) .. param .. string.sub(line, pos + 1)
+            pos = pos + 1
+            redraw()
+
+        elseif event == "paste" then
+            -- Pasted text
+            line = string.sub(line, 1, pos) .. param .. string.sub(line, pos + 1)
+            pos = pos + string.len(param)
+            redraw()
+
+        elseif event == "key" then
+            if param == keys.enter then
+                -- Enter
+                break
+
+            elseif param == keys.left then
+                -- Left
+                if pos > 0 then
+                    pos = pos - 1
+                    redraw()
+                end
+
+            elseif param == keys.right then
+                -- Right
+                if pos < string.len(line) then
+                    redraw(" ")
+                    pos = pos + 1
+                    redraw()
+                end
+
+            elseif param == keys.up or param == keys.down then
+                -- Up or down
+                if history then
+                    redraw(" ")
+                    if param == keys.up then
+                        -- Up
+                        if historyPos == nil then
+                            if #history > 0 then
+                                historyPos = #history
+                            end
+                        elseif historyPos > 1 then
+                            historyPos = historyPos - 1
+                        end
+                    else
+                        -- Down
+                        if historyPos == #history then
+                            historyPos = nil
+                        elseif historyPos ~= nil then
+                            historyPos = historyPos + 1
+                        end
+                    end
+                    if historyPos then
+                        line = history[historyPos].text
+                        pos = string.len(line)
+                    else
+                        line = ""
+                        pos = 0
+                    end
+                    redraw()
+                end
+            elseif param == keys.backspace then
+                -- Backspace
+                if pos > 0 then
+                    redraw(" ")
+                    line = string.sub(line, 1, pos - 1) .. string.sub(line, pos + 1)
+                    pos = pos - 1
+                    redraw()
+                end
+            elseif param == keys.home then
+                -- Home
+                redraw(" ")
+                pos = 0
+                redraw()
+            elseif param == keys.delete then
+                -- Delete
+                if pos < string.len(line) then
+                    redraw(" ")
+                    line = string.sub(line, 1, pos) .. string.sub(line, pos + 2)
+                    redraw()
+                end
+            elseif param == keys["end"] then
+                -- End
+                redraw(" ")
+                pos = string.len(line)
+                redraw()
+            end
+
+        elseif event == "term_resize" then
+            -- Terminal resized
+            terminalWidth = term.getSize()
+            redraw()
+
+        end
+    end
+
+    local cx, cy = term.getCursorPos()
+    term.setCursorBlink(false)
+    term.setCursorPos(terminalWidth + 1, cy)
+    print()
+
+    return trim(line), historyPos
+end
+
+
 while true do
   term.clear()
   term.setCursorPos(1, 1)
   print("HypeList Shell")
-  print("")
-  print("What do you want to add to the hype list?")
-  term.write("> ")
-  
-  local text = trim(read())
-  if (string.len(text) > 0) then
-    hypelist.add(text)
+  print()
+  print("Type and press Enter to add a new entry.")
+  print("Use the up/down arrows to edit an existing entry.")
+  print()
 
-    print("")  
+  local history = hypelist.getList()
+  local text, historyPos = read(history)
+
+  if (string.len(text) > 0) then
+    if historyPos ~= nil then
+      hypelist.edit(historyPos, text)
+    else
+      hypelist.add(text)
+    end
+
+    print()
     print("It is done.")
   else
-    print("")
+    print()
     print("Aww hell no.")
   end
-  
+
   sleep(0.5)
 end

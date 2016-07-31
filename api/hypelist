@@ -13,7 +13,7 @@ end
 
 local function load()
   local listFile = fs.open("hype.list", "r")
-  
+
   if (listFile ~= nil) then
     list = textutils.unserialize(listFile.readAll())
     listFile.close()
@@ -23,10 +23,10 @@ end
 
 local function save()
   local listFile = fs.open("hype.list", "w")
-  
+
   listFile.write(textutils.serialize(list))
   listFile.close()
-  
+
   os.queueEvent("hypelist")
 end
 
@@ -35,9 +35,17 @@ function add(text)
   local entry = {}
   entry.text = text
   entry.done = false
-  
+
   table.insert(list, entry)
   save()
+end
+
+
+function edit(index, text)
+  if (index > 0 and index <= #list) then
+    list[index].text = text
+    save()
+  end
 end
 
 
