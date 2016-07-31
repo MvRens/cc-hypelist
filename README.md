@@ -38,7 +38,7 @@ update
 
 
 #### Usage
-Right-click the computer to access the input panel. Type whatever you want to add to the list and press Enter.
+Right-click the computer to access the input panel. Type whatever you want to add to the list and press Enter, or use the Up/Down arrows to edit an existing entry.
 
 Further interaction with the list is done through the monitor. Right-click the box on the left to mark an item as done. After that a red X will appear on the right side which can be right-clicked to remove the item.
 
